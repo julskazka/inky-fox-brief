@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const STORAGE_KEY = 'inkyFoxBrief:v12';
+  const STORAGE_KEY = 'inkyFoxBrief:v13';
   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz06rYAjbywJ6CS5yUHYVgi7-O6FDV-xbsHAh7UBQLbdGwlgXbL0DFuPDCfsfxPjYKw/exec';
   const $ = (selector, root = document) => root.querySelector(selector);
   const esc = (v = '') => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
@@ -41,7 +41,7 @@
     return `<div class="field"><div class="field-label ${req}">${esc(f.l)}</div><div class="choice-grid">${f.o.map(([value,label])=>`<label class="choice-card"><input type="${f.type==='multi'?'checkbox':'radio'}" name="${f.n}" value="${value}" ${values.includes(value)?'checked':''}><span class="choice-body"><span class="choice-box"></span><span class="choice-text">${esc(label)}</span></span></label>`).join('')}</div></div>`;
   }
 
-  async function loadAsset(path){try{const response=await fetch(`${path}?v=12`,{cache:'no-store'});if(!response.ok)throw new Error();const b64=(await response.text()).trim();return `data:image/webp;base64,${b64}`;}catch{return '';}}
+  async function loadAsset(path){try{const response=await fetch(`${path}?v=13`,{cache:'no-store'});if(!response.ok)throw new Error();const b64=(await response.text()).trim();return `data:image/webp;base64,${b64}`;}catch{return '';}}
   async function loadAssets(){const entries=await Promise.all(Object.entries(assetPaths).map(async([key,path])=>[key,await loadAsset(path)]));entries.forEach(([key,value])=>assets[key]=value);}
 
   function intro(){
@@ -55,7 +55,7 @@
     if(step===sections.length){review();return;}
     const section=sections[step];$('#progress').classList.remove('is-hidden');$('#nav').classList.remove('is-hidden');$('#miniFooter').classList.add('is-hidden');
     const pct=Math.round(((step+1)/(sections.length+1))*100);$('#progressFill').style.width=`${pct}%`;$('#progressCount').textContent=`${step+1} / ${sections.length+1}`;
-    $('#screen').innerHTML=`<section class="step">${assets.paw?`<img class="step-decor paw-big" src="${assets.paw}" alt="" aria-hidden="true"><img class="step-decor paw-purple" src="${assets.paw}" alt="" aria-hidden="true"><img class="step-decor paw-blue" src="${assets.paw}" alt="" aria-hidden="true">`:''}<div class="step-kicker">${esc(section.k)}</div><h2 class="step-title">${esc(section.t)}</h2><p class="step-desc">${esc(section.d)}</p><div class="field-stack">${section.f.map(fieldHtml).join('')}</div><div class="validation" id="validation"></div></section>`;
+    $('#screen').innerHTML=`<section class="step">${assets.paw?`<img class="step-decor paw-big" src="${assets.paw}" alt="" aria-hidden="true">`:''}<div class="step-kicker">${esc(section.k)}</div><h2 class="step-title">${esc(section.t)}</h2><p class="step-desc">${esc(section.d)}</p><div class="field-stack">${section.f.map(fieldHtml).join('')}</div><div class="validation" id="validation"></div></section>`;
     $('#backBtn').querySelector('span').textContent=step===0?'В начало':'Назад';$('#nextBtn').querySelector('span').textContent='Далее';$('#nextBtn').disabled=false;bindFields();
   }
 
@@ -78,7 +78,9 @@
     $('#backBtn').querySelector('span').textContent='Назад';$('#nextBtn').querySelector('span').textContent='Отправить бриф';$('#nextBtn').disabled=false;
   }
 
-  function payload(){return{...state,projectTypes:(state.projectTypes||[]).join(', '),trafficSources:(state.trafficSources||[]).join(', '),integrations:(state.integrations||[]).join(', '),sentAt:new Date().toISOString()};}
+  function optionLabels(name){for(const section of sections){const field=section.f.find(item=>item.n===name);if(field&&field.o)return Object.fromEntries(field.o);}return {};}
+function russianValue(name,value){const map=optionLabels(name);if(Array.isArray(value))return value.map(v=>map[v]||v).join(', ');return map[value]||value||'';}
+function payload(){return{...state,projectTypes:russianValue('projectTypes',state.projectTypes),trafficSources:russianValue('trafficSources',state.trafficSources),hasScenarios:russianValue('hasScenarios',state.hasScenarios),textStatus:russianValue('textStatus',state.textStatus),textOwner:russianValue('textOwner',state.textOwner),designStatus:russianValue('designStatus',state.designStatus),integrations:russianValue('integrations',state.integrations),projectLifetime:russianValue('projectLifetime',state.projectLifetime),sentAt:new Date().toISOString()};}
   async function submit(){
     if(sending)return;sending=true;$('#nextBtn').disabled=true;$('#nextBtn').querySelector('span').textContent='Отправляем…';const validation=$('#validation');if(validation)validation.textContent='';
     try{await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload())});localStorage.removeItem(STORAGE_KEY);state={...initialState};success();}

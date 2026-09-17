@@ -1,0 +1,103 @@
+name: Fix brief v13
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ github.token }}
+
+      - name: Apply fixes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          app_path = Path('app.js')
+          css_path = Path('styles.css')
+          html_path = Path('index.html')
+
+          app = app_path.read_text(encoding='utf-8')
+          css = css_path.read_text(encoding='utf-8')
+          html = html_path.read_text(encoding='utf-8')
+
+          app = app.replace("const STORAGE_KEY = 'inkyFoxBrief:v12';", "const STORAGE_KEY = 'inkyFoxBrief:v13';")
+          app = app.replace('?v=12`', '?v=13`')
+
+          app = app.replace(
+              '${assets.paw ? `<img class="step-decor paw-big" src="${assets.paw}" alt="" aria-hidden="true"><img class="step-decor paw-purple" src="${assets.paw}" alt="" aria-hidden="true"><img class="step-decor paw-blue" src="${assets.paw}" alt="" aria-hidden="true">` : \'\'}',
+              '${assets.paw ? `<img class="step-decor paw-big" src="${assets.paw}" alt="" aria-hidden="true">` : \'\'}'
+          )
+
+          pattern = re.compile(r'''  function payload\(\)\{\n    return \{\n      \.\.\.state,\n      projectTypes:\(state\.projectTypes \|\| \[\]\)\.join\(', '\),\n      trafficSources:\(state\.trafficSources \|\| \[\]\)\.join\(', '\),\n      integrations:\(state\.integrations \|\| \[\]\)\.join\(', '\),\n      sentAt:new Date\(\)\.toISOString\(\)\n    \};\n  \}''')
+          replacement = '''  function optionLabels(name){
+            for (const section of sections) {
+              const field = section.f.find(item => item.n === name);
+              if (field && field.o) return Object.fromEntries(field.o);
+            }
+            return {};
+          }
+          function russianValue(name, value){
+            const map = optionLabels(name);
+            if (Array.isArray(value)) return value.map(v => map[v] || v).join(', ');
+            return map[value] || value || '';
+          }
+          function payload(){
+            return {
+              ...state,
+              projectTypes:russianValue('projectTypes',state.projectTypes),
+              trafficSources:russianValue('trafficSources',state.trafficSources),
+              hasScenarios:russianValue('hasScenarios',state.hasScenarios),
+              textStatus:russianValue('textStatus',state.textStatus),
+              textOwner:russianValue('textOwner',state.textOwner),
+              designStatus:russianValue('designStatus',state.designStatus),
+              integrations:russianValue('integrations',state.integrations),
+              projectLifetime:russianValue('projectLifetime',state.projectLifetime),
+              sentAt:new Date().toISOString()
+            };
+          }'''
+          app, count = pattern.subn(replacement, app)
+          if count != 1:
+              raise SystemExit(f'payload patch failed: {count}')
+
+          old_css = '.step-decor{position:absolute;pointer-events:none;opacity:.9}.paw-big{width:105px;right:8px;top:6px;filter:drop-shadow(0 8px 16px rgba(255,87,179,.15))}.paw-purple{width:72px;right:116px;bottom:2px;filter:hue-rotate(38deg) saturate(1.35)}.paw-blue{width:64px;left:8px;bottom:0;filter:hue-rotate(112deg) saturate(1.25)}'
+          new_css = '.step-decor{position:absolute;pointer-events:none;z-index:0;opacity:.72}.paw-big{width:82px;right:8px;top:4px;filter:drop-shadow(0 8px 16px rgba(255,87,179,.16))}.step-kicker,.step-title,.step-desc,.field-stack,.validation{position:relative;z-index:2}'
+          if old_css not in css:
+              raise SystemExit('desktop decor patch target not found')
+          css = css.replace(old_css, new_css)
+
+          old_mobile = '.paw-big{width:68px;right:-8px;top:2px}.paw-purple{width:54px;right:48px;bottom:-2px}.paw-blue{width:48px;left:-8px;bottom:-2px}'
+          new_mobile = '.paw-big{width:52px;right:0;top:2px;opacity:.62}'
+          if old_mobile not in css:
+              raise SystemExit('mobile decor patch target not found')
+          css = css.replace(old_mobile, new_mobile)
+
+          html = html.replace('styles.css?v=12', 'styles.css?v=13').replace('app.js?v=12', 'app.js?v=13')
+
+          app_path.write_text(app, encoding='utf-8')
+          css_path.write_text(css, encoding='utf-8')
+          html_path.write_text(html, encoding='utf-8')
+          PY
+
+      - name: Commit fixes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js styles.css index.html
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "Fix fox image decor and Russian form values"
+          git push

@@ -1,11 +1,18 @@
 (() => {
-  const KEY = 'inkyFoxBrief:v4';
-  const $ = (s, root=document) => root.querySelector(s);
-  const esc = (v='') => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-  const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
-  const state = load();
-  let step = -1;
-  let heroSrc = '';
+  'use strict';
+
+  const KEY = 'inkyFoxBrief:v5';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz06rYAjbywJ6CS5yUHYVgi7-O6FDV-xbsHAh7UBQLbdGwlgXbL0DFuPDCfsfxPjYKw/exec';
+  const $ = (s, root = document) => root.querySelector(s);
+  const esc = (v = '') => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+
+  const initialState = {
+    name:'', telegram:'', projectName:'', projectTypes:[], projectTypeOther:'', projectDescription:'',
+    userGoal:'', audience:'', trafficSources:[], trafficOther:'', afterPage:'', funnel:'', hasScenarios:'',
+    scenarios:'', mustHave:'', textStatus:'', textOwner:'', designStatus:'', designRefs:'', integrations:[],
+    integrationOther:'', launchDate:'', readyDate:'', importantDates:'', projectLifetime:'', futureUpdates:'',
+    important:'', avoid:'', extra:''
+  };
 
   const sections = [
     {k:'Знакомство', t:'Для начала — как к вам обращаться?', d:'Оставьте имя и Telegram, чтобы бриф не потерялся среди проектов.', f:[
@@ -61,40 +68,143 @@
     ]}
   ];
 
-  function save(){ localStorage.setItem(KEY, JSON.stringify(state)); const el=$('#saveStatus'); if(el){el.textContent='Сохранено'; clearTimeout(save.t); save.t=setTimeout(()=>el.textContent='',900);} }
+  let state = load();
+  let step = -1;
+  let assets = { hero:'', paw:'', idea:'', sleep:'' };
+  let sending = false;
+
+  function load(){
+    try { return { ...initialState, ...(JSON.parse(localStorage.getItem(KEY)) || {}) }; }
+    catch { return { ...initialState }; }
+  }
+  function save(){
+    localStorage.setItem(KEY, JSON.stringify(state));
+    const el = $('#saveStatus');
+    if(el){ el.textContent='Сохранено'; clearTimeout(save.t); save.t=setTimeout(()=>el.textContent='',900); }
+  }
   function visible(f){ if(!f.show) return true; const [n,v]=f.show; const x=state[n]; return Array.isArray(x) ? x.includes(v) : x===v; }
   function field(f){
     if(!visible(f)) return '';
-    const req=f.req?' required':''; const hint=f.hint?`<div class="field-hint">${esc(f.hint)}</div>`:'';
+    const req=f.req?' required':'';
+    const hint=f.hint?`<div class="field-hint">${esc(f.hint)}</div>`:'';
     if(f.type==='textarea') return `<div class="field"><label class="${req}">${esc(f.l)}</label>${hint}<textarea class="text-area" name="${f.n}" placeholder="${esc(f.ph||'')}">${esc(state[f.n]||'')}</textarea></div>`;
     if(f.type==='text'||f.type==='date') return `<div class="field"><label class="${req}">${esc(f.l)}</label>${hint}<input class="${f.type==='date'?'date-input':'text-input'}" type="${f.type}" name="${f.n}" value="${esc(state[f.n]||'')}" placeholder="${esc(f.ph||'')}"></div>`;
     const vals=f.type==='multi'?(state[f.n]||[]):[state[f.n]];
     return `<div class="field"><div class="field-label ${req}">${esc(f.l)}</div><div class="choice-grid">${f.o.map(([v,l])=>`<label class="choice-card"><input type="${f.type==='multi'?'checkbox':'radio'}" name="${f.n}" value="${v}" ${vals.includes(v)?'checked':''}><span class="choice-body"><span class="choice-dot"></span><span class="choice-text">${esc(l)}</span></span></label>`).join('')}</div></div>`;
   }
-  function paw(){ return `<span class="css-paw" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></span>`; }
+  const pawImg = (cls='') => assets.paw ? `<img class="watercolor-paw ${cls}" src="${assets.paw}" alt="" aria-hidden="true">` : '';
+
   function intro(){
-    step=-1; $('#progressShell').classList.add('is-hidden'); $('#navRow').classList.add('is-hidden'); $('#deviceNote').classList.add('is-hidden');
-    $('#screen').innerHTML=`<div class="intro-grid"><div class="intro-copy"><div class="eyebrow">БРИФ · MINIAPP / WEB</div><h1>Расскажите о проекте — я соберу из этого понятную задачу на разработку</h1><p class="lead">Не нужно готовить техническое задание. Ответьте на вопросы так, как понимаете сейчас. Если чего-то ещё нет — это нормально.</p><div class="intro-points"><span>≈ 7–10 минут</span><span>можно вернуться назад</span><span>ответы не потеряются</span></div><button class="btn btn-primary btn-large" id="startBtn">Начать бриф</button></div><div class="intro-art"><span class="splash splash-pink"></span><span class="splash splash-blue"></span><span class="splash splash-mint"></span>${paw()}<span class="sparkles sparkles-one">✦</span><span class="sparkles sparkles-two">✧</span>${heroSrc?`<img class="hero-fox" src="${heroSrc}" alt="Лисёнок Inky Fox">`:''}</div></div>`;
+    step=-1;
+    $('#progressShell').classList.add('is-hidden');
+    $('#navRow').classList.add('is-hidden');
+    $('#deviceNote').classList.add('is-hidden');
+    $('#screen').innerHTML=`<div class="intro-grid"><div class="intro-copy"><div class="eyebrow">БРИФ · MINIAPP / WEB</div><h1>Расскажите о проекте — я соберу из этого понятную задачу на разработку</h1><p class="lead">Не нужно готовить техническое задание. Ответьте на вопросы так, как понимаете сейчас. Если чего-то ещё нет — это нормально.</p><div class="intro-points"><span>≈ 7–10 минут</span><span>можно вернуться назад</span><span>ответы не потеряются</span></div><button class="btn btn-primary btn-large" id="startBtn">Начать бриф</button></div><div class="intro-art"><div class="hero-halo"></div>${assets.hero?`<img class="hero-fox" src="${assets.hero}" alt="Лисёнок Inky Fox с ноутбуком">`:''}${pawImg('intro-paw')}<span class="sparkles sparkles-one">✦</span><span class="sparkles sparkles-two">✧</span></div></div>`;
     $('#startBtn').onclick=()=>go(0);
   }
-  function go(n){ step=Math.max(0,Math.min(n,sections.length)); render(); scrollTo({top:0,behavior:'smooth'}); }
+
+  function go(n){ step=Math.max(0,Math.min(n,sections.length)); render(); window.scrollTo({top:0,behavior:'smooth'}); }
   function render(){
-    if(step===sections.length){ final(); return; }
-    const s=sections[step]; $('#progressShell').classList.remove('is-hidden'); $('#navRow').classList.remove('is-hidden'); $('#deviceNote').classList.remove('is-hidden');
+    if(step===sections.length){ review(); return; }
+    const s=sections[step];
+    $('#progressShell').classList.remove('is-hidden'); $('#navRow').classList.remove('is-hidden'); $('#deviceNote').classList.remove('is-hidden');
     const pct=Math.round((step+1)/(sections.length+1)*100); $('#progressLabel').textContent=`Шаг ${step+1} из ${sections.length+1}`; $('#progressPercent').textContent=`${pct}%`; $('#progressFill').style.width=`${pct}%`;
-    $('#screen').innerHTML=`<div class="step-screen"><span class="step-decor-splash pink"></span><span class="step-decor-splash blue"></span><span class="step-decor-splash mint"></span>${paw()}<div class="step-kicker">${esc(s.k)}</div><h2 class="step-title">${esc(s.t)}</h2><p class="step-description">${esc(s.d)}</p><div class="field-stack">${s.f.map(field).join('')}</div><div class="validation-message" id="validationMessage"></div></div>`;
-    $('#backBtn').textContent=step===0?'В начало':'Назад'; $('#nextBtn').textContent='Далее'; bind();
+    $('#screen').innerHTML=`<div class="step-screen"><span class="step-decor-splash pink"></span><span class="step-decor-splash blue"></span><span class="step-decor-splash mint"></span>${pawImg('step-paw')}<div class="step-kicker">${esc(s.k)}</div><h2 class="step-title">${esc(s.t)}</h2><p class="step-description">${esc(s.d)}</p><div class="field-stack">${s.f.map(field).join('')}</div><div class="validation-message" id="validationMessage"></div></div>`;
+    $('#backBtn').textContent=step===0?'В начало':'Назад'; $('#nextBtn').textContent='Далее'; $('#nextBtn').disabled=false; bind();
   }
   function bind(){
     $('#screen').querySelectorAll('input,textarea').forEach(el=>el.addEventListener(el.type==='checkbox'||el.type==='radio'?'change':'input',e=>{
-      const x=e.target; if(x.type==='checkbox'){ const a=new Set(state[x.name]||[]); x.checked?a.add(x.value):a.delete(x.value); state[x.name]=[...a]; } else state[x.name]=x.value; save();
+      const x=e.target;
+      if(x.type==='checkbox'){ const a=new Set(state[x.name]||[]); x.checked?a.add(x.value):a.delete(x.value); state[x.name]=[...a]; }
+      else state[x.name]=x.value;
+      save();
       if(sections[step].f.some(f=>f.show&&f.show[0]===x.name)) render();
     }));
   }
-  function valid(){ const s=sections[step]; for(const f of s.f){ if(!f.req||!visible(f)) continue; const v=state[f.n]; if(Array.isArray(v)?!v.length:!String(v||'').trim()) return `Заполните: ${f.l}`; } return ''; }
-  function final(){ $('#progressShell').classList.add('is-hidden'); $('#navRow').classList.add('is-hidden'); $('#deviceNote').classList.add('is-hidden'); $('#screen').innerHTML=`<div class="final-message"><div class="final-mark">✦</div><div class="step-kicker">ГОТОВО</div><h2 class="step-title">Спасибо! Бриф заполнен</h2><p class="step-description">Ничего дополнительно отправлять или скачивать не нужно.</p></div>`; }
+  function valid(){
+    const s=sections[step];
+    for(const f of s.f){
+      if(!f.req||!visible(f)) continue;
+      const v=state[f.n];
+      if(Array.isArray(v)?!v.length:!String(v||'').trim()) return `Заполните: ${f.l}`;
+    }
+    return '';
+  }
+
+  const projectTypeLabels={landing:'Посадочная страница',registration:'Регистрация на мероприятие / вебинар / интенсив',club:'Страница клуба',vote:'Голосование',quiz:'Квиз / тест',catalog:'Каталог',leadmagnet:'Лид-магнит',sales:'Страница продажи',interactive:'Интерактивная механика',other:'Другое'};
+  const trafficLabels={tgChannel:'Telegram-канал',bot:'Telegram-бот',ads:'Реклама',mail:'Рассылка',getcourse:'GetCourse',social:'Соцсети',qr:'QR-код',site:'Сайт',other:'Другое'};
+  const integrationLabels={getcourse:'GetCourse',amo:'AMO CRM',bitrix:'Битрикс24',payments:'Платёжная система',other:'Другое',unknown:'Пока не знаю',no:'Не нужны'};
+  const textLabels={ready:'Тексты полностью готовы',adapt:'Тексты есть, но их нужно адаптировать',materials:'Есть материалы, из которых нужно собрать тексты',fromScratch:'Тексты нужно подготовить с нуля'};
+  const designLabels={ready:'Есть готовый дизайн',designer:'Есть дизайнер, который подготовит макеты',needDesigner:'Нужен ваш дизайнер',adapt:'Есть существующий стиль проекта, нужно адаптировать его',none:'Визуального стиля пока нет'};
+  const lifetimeLabels={one:'Под один конкретный запуск',ongoing:'Для постоянного использования',repeat:'Использовать повторно и обновлять',unknown:'Пока не определено'};
+  const listLabels=(arr,map)=>Array.isArray(arr)?arr.map(x=>map[x]||x).join(', '):'';
+  function summaryCards(){
+    const cards=[
+      ['Контакт',`Имя: ${state.name||'—'}\nTelegram: ${state.telegram||'—'}`],
+      ['Проект',`Название: ${state.projectName||'—'}\nФормат: ${listLabels(state.projectTypes,projectTypeLabels)}${state.projectTypeOther?`\nДругое: ${state.projectTypeOther}`:''}\nЗадача: ${state.projectDescription||'—'}`],
+      ['Цель',`Действие: ${state.userGoal||'—'}\nАудитория: ${state.audience||'—'}`],
+      ['Воронка',`Откуда: ${listLabels(state.trafficSources,trafficLabels)}${state.trafficOther?`\nДругое: ${state.trafficOther}`:''}\nКуда дальше: ${state.afterPage||'—'}\nВоронка: ${state.funnel||'—'}${state.scenarios?`\nСценарии: ${state.scenarios}`:''}`],
+      ['Внутри',state.mustHave||'—'],
+      ['Тексты',`${textLabels[state.textStatus]||'—'}\n${state.textOwner==='yes'?'Есть человек, который делает тексты':state.textOwner==='needHelp'?'Нужна помощь с текстами':'—'}`],
+      ['Дизайн',`${designLabels[state.designStatus]||'—'}\n${state.designRefs||'—'}`],
+      ['Интеграции',`${listLabels(state.integrations,integrationLabels)}${state.integrationOther?`\nДругое: ${state.integrationOther}`:''}`],
+      ['Сроки',`Запуск: ${state.launchDate||'—'}\nГотовность: ${state.readyDate||'—'}\nВажные даты: ${state.importantDates||'—'}`],
+      ['После запуска',`${lifetimeLabels[state.projectLifetime]||'—'}\n${state.futureUpdates||'—'}`],
+      ['Дополнительно',`Важно: ${state.important||'—'}\nНе хочется: ${state.avoid||'—'}\nЕщё: ${state.extra||'—'}`]
+    ];
+    return cards.map(([t,v])=>`<div class="summary-card"><h3>${esc(t)}</h3><p>${esc(v)}</p></div>`).join('');
+  }
+  function review(){
+    $('#progressShell').classList.remove('is-hidden'); $('#navRow').classList.remove('is-hidden'); $('#deviceNote').classList.remove('is-hidden');
+    $('#progressLabel').textContent=`Шаг ${sections.length+1} из ${sections.length+1}`; $('#progressPercent').textContent='100%'; $('#progressFill').style.width='100%';
+    $('#screen').innerHTML=`<div class="step-screen review-screen">${pawImg('step-paw')}<div class="review-head"><div><div class="step-kicker">ФИНАЛ</div><h2 class="step-title">Проверьте бриф перед отправкой</h2><p class="step-description">Если всё верно — нажмите «Отправить бриф». Ответы сразу попадут в таблицу.</p></div>${assets.idea?`<img class="review-fox" src="${assets.idea}" alt="Лисёнок с лампочкой">`:''}</div><div class="summary">${summaryCards()}</div><div class="validation-message" id="validationMessage"></div></div>`;
+    $('#backBtn').textContent='Назад'; $('#nextBtn').textContent='Отправить бриф'; $('#nextBtn').disabled=false;
+  }
+  function payload(){
+    return {
+      ...state,
+      projectTypes:(state.projectTypes||[]).join(', '),
+      trafficSources:(state.trafficSources||[]).join(', '),
+      integrations:(state.integrations||[]).join(', '),
+      sentAt:new Date().toISOString()
+    };
+  }
+  async function submit(){
+    if(sending) return;
+    sending=true; $('#nextBtn').disabled=true; $('#nextBtn').textContent='Отправляем…';
+    const msg=$('#validationMessage'); if(msg) msg.textContent='';
+    try{
+      await fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload())});
+      localStorage.removeItem(KEY); state={...initialState}; success();
+    }catch(err){
+      sending=false; $('#nextBtn').disabled=false; $('#nextBtn').textContent='Отправить бриф';
+      if(msg) msg.textContent='Не удалось отправить бриф. Попробуйте ещё раз.';
+    }
+  }
+  function success(){
+    sending=false; $('#progressShell').classList.add('is-hidden'); $('#navRow').classList.add('is-hidden'); $('#deviceNote').classList.add('is-hidden');
+    $('#screen').innerHTML=`<div class="success-screen"><div class="success-copy"><div class="step-kicker">ГОТОВО</div><h2 class="step-title">Спасибо! Бриф отправлен</h2><p class="step-description">Ответы сохранены. Ничего дополнительно отправлять или скачивать не нужно.</p><button class="btn btn-primary" id="restartBtn">Заполнить новый бриф</button></div>${assets.sleep?`<img class="success-fox" src="${assets.sleep}" alt="Спящий лисёнок">`:''}</div>`;
+    $('#restartBtn').onclick=intro;
+  }
+
   $('#backBtn').onclick=()=>step<=0?intro():go(step-1);
-  $('#nextBtn').onclick=()=>{ const m=valid(); if(m){$('#validationMessage').textContent=m; return;} go(step+1); };
-  $('#brandLink').onclick=e=>{e.preventDefault();intro();};
-  (async()=>{ try{ const b64=(await fetch('assets/inky-fox.b64',{cache:'no-store'}).then(r=>r.text())).trim(); heroSrc=`data:image/webp;base64,${b64}`; }catch{} intro(); })();
+  $('#nextBtn').onclick=()=>{
+    if(step===sections.length){ submit(); return; }
+    const m=valid(); if(m){ $('#validationMessage').textContent=m; return; }
+    go(step+1);
+  };
+  $('#brandLink').onclick=e=>{ e.preventDefault(); intro(); };
+
+  async function loadAsset(path){
+    try{
+      const b64=(await fetch(path,{cache:'no-store'}).then(r=>{if(!r.ok) throw new Error(); return r.text();})).trim();
+      return `data:image/webp;base64,${b64}`;
+    }catch{return '';}
+  }
+  (async()=>{
+    const [hero,paw,idea,sleep]=await Promise.all([
+      loadAsset('assets/inky-fox.b64'), loadAsset('assets/paw.b64'), loadAsset('assets/idea.b64'), loadAsset('assets/sleep.b64')
+    ]);
+    assets={hero,paw,idea,sleep}; intro();
+  })();
 })();

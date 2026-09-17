@@ -1,0 +1,16 @@
+name: Test Google Sheet
+on:
+  push:
+    paths:
+      - '.github/workflows/test-google-sheet.yml'
+jobs:
+  test-sheet:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send test brief
+        run: |
+          curl -i -L --fail-with-body \
+            -X POST \
+            -H 'Content-Type: text/plain;charset=UTF-8' \
+            --data '{"name":"__TECH_TEST__","telegram":"@tech_test","projectName":"Inky Fox test","projectTypes":"MiniApp","projectDescription":"Technical submission test","userGoal":"Test","audience":"Test","trafficSources":"Test","afterPage":"Test","textStatus":"ready","textOwner":"yes","designStatus":"ready","integrations":"no","launchDate":"2026-09-17","readyDate":"2026-09-17","projectLifetime":"one","sentAt":"2026-09-17T13:30:00.000Z"}' \
+            'https://script.google.com/macros/s/AKfycbz06rYAjbywJ6CS5yUHYVgi7-O6FDV-xbsHAh7UBQLbdGwlgXbL0DFuPDCfsfxPjYKw/exec'

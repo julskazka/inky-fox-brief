@@ -3,80 +3,48 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#090A0D" />
+  <meta name="theme-color" content="#070910" />
   <meta name="description" content="Бриф на разработку MiniApp / веб-страницы — Inky Fox" />
   <title>Inky Fox — бриф на разработку</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="ambient ambient-pink" aria-hidden="true"></div>
-  <div class="ambient ambient-blue" aria-hidden="true"></div>
-  <div class="ambient ambient-mint" aria-hidden="true"></div>
+  <div class="page-glow glow-left" aria-hidden="true"></div>
+  <div class="page-glow glow-right" aria-hidden="true"></div>
+  <div class="page-glow glow-bottom" aria-hidden="true"></div>
 
   <main class="app-shell">
     <header class="topbar">
-      <a class="brand" href="#" aria-label="Inky Fox — в начало">
-        <span class="brand-mark" aria-hidden="true">✦</span>
+      <a class="brand" href="#" id="brandLink" aria-label="Inky Fox — в начало">
+        <span class="brand-mark">✦</span>
         <span class="brand-copy">
           <strong>INKY FOX</strong>
           <small>бриф на разработку</small>
         </span>
       </a>
-      <div class="topbar-status" id="topbarStatus" aria-live="polite"></div>
+      <div class="save-status" id="saveStatus" aria-live="polite"></div>
     </header>
 
-    <section class="quiz-wrap" aria-live="polite">
-      <div class="progress-shell" id="progressShell" hidden>
-        <div class="progress-meta">
-          <span id="progressLabel">Шаг 1</span>
-          <span id="progressPercent">0%</span>
-        </div>
-        <div class="progress-track" aria-hidden="true">
-          <div class="progress-fill" id="progressFill"></div>
-        </div>
+    <section class="progress-shell is-hidden" id="progressShell">
+      <div class="progress-meta">
+        <span id="progressLabel">Шаг 1 из 14</span>
+        <span id="progressPercent">7%</span>
       </div>
-
-      <section class="quiz-card" id="quizCard">
-        <div id="screen"></div>
-      </section>
-
-      <div class="nav-row" id="navRow" hidden>
-        <button class="btn btn-ghost" type="button" id="backBtn">Назад</button>
-        <button class="btn btn-primary" type="button" id="nextBtn">Далее</button>
-      </div>
-
-      <p class="save-note" id="saveNote" hidden>Ответы сохраняются на этом устройстве — можно вернуться позже.</p>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
     </section>
+
+    <section class="quiz-card" id="quizCard">
+      <div id="screen"></div>
+    </section>
+
+    <div class="nav-row is-hidden" id="navRow">
+      <button class="btn btn-ghost" type="button" id="backBtn">Назад</button>
+      <button class="btn btn-primary" type="button" id="nextBtn">Далее</button>
+    </div>
+
+    <div class="device-note is-hidden" id="deviceNote">Ответы сохраняются на этом устройстве — можно вернуться позже.</div>
   </main>
 
-  <template id="introTemplate">
-    <div class="intro-grid">
-      <div class="intro-copy">
-        <span class="eyebrow">БРИФ · MINIAPP / WEB</span>
-        <h1>Расскажите о проекте — я соберу из этого понятную задачу на разработку</h1>
-        <p class="lead">Не нужно готовить техническое задание. Ответьте на вопросы так, как понимаете сейчас. Если чего-то ещё нет — это нормально.</p>
-        <div class="intro-points">
-          <span>≈ 7–10 минут</span>
-          <span>можно вернуться назад</span>
-          <span>ответы не потеряются</span>
-        </div>
-        <button class="btn btn-primary btn-large" type="button" id="startBtn">Начать бриф</button>
-      </div>
-
-      <div class="intro-art" aria-hidden="true">
-        <span class="paint-splash paint-pink"></span>
-        <span class="paint-splash paint-blue"></span>
-        <span class="paint-splash paint-mint"></span>
-        <img class="decor-img decor-tail" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" data-b64-src="assets/tail.b64" data-b64-type="image/webp" alt="" />
-        <img class="decor-img decor-paw" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" data-b64-src="assets/paw.b64" data-b64-type="image/webp" alt="" />
-        <img class="decor-img decor-trail" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" data-b64-src="assets/trail.b64" data-b64-type="image/webp" alt="" />
-        <img class="decor-img decor-sparkles" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" data-b64-src="assets/sparkles.b64" data-b64-type="image/webp" alt="" />
-        <img class="hero-fox" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" data-b64-src="assets/inky-fox.b64" data-b64-type="image/webp" alt="Лисёнок Inky Fox" />
-      </div>
-    </div>
-  </template>
-
-  <script src="asset-loader.js" defer></script>
-  <script src="app.js" defer></script>
+  <script src="app.js"></script>
 </body>
 </html>

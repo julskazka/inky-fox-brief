@@ -1,0 +1,70 @@
+name: Assemble final hero asset
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ github.token }}
+
+      - name: Assemble verified hero file and wire it into the page
+        shell: bash
+        run: |
+          cat tmp/hero.part1 tmp/hero.part2 tmp/hero.part3 tmp/hero.part4 tmp/hero.part5 > /tmp/hero.b64
+          base64 -d /tmp/hero.b64 > assets/hero.webp
+          echo "f7e5c55b010c9b837c1390f1435ba4ed3fc9cb0e28e2aace380cca0822cd67bb  assets/hero.webp" | sha256sum -c -
+          test "$(stat -c %s assets/hero.webp)" = "17146"
+
+          cat > hero-fix.css <<'CSS'
+          /* v14: use a normal verified WebP file instead of loading base64 text in JavaScript */
+          .hero-stage{position:relative;}
+          .hero-stage .hero-img{display:none!important;}
+          .hero-stage::after{
+            content:"";
+            position:relative;
+            z-index:2;
+            display:block;
+            width:min(100%,500px);
+            aspect-ratio:300/360;
+            align-self:flex-end;
+            background:url("assets/hero.webp?v=14") center bottom/contain no-repeat;
+            filter:drop-shadow(0 20px 32px rgba(0,0,0,.4));
+          }
+          @media(max-width:760px){
+            .hero-stage::after{width:min(92%,360px);aspect-ratio:300/360;align-self:center;}
+          }
+          CSS
+
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          html=p.read_text(encoding='utf-8')
+          if 'hero-fix.css' not in html:
+              html=html.replace('</head>', '  <link rel="stylesheet" href="hero-fix.css?v=14" />\n</head>')
+          else:
+              html=re.sub(r'hero-fix\.css\?v=\d+', 'hero-fix.css?v=14', html)
+          p.write_text(html,encoding='utf-8')
+          PY
+
+          rm -f tmp/hero.part1 tmp/hero.part2 tmp/hero.part3 tmp/hero.part4 tmp/hero.part5
+          rmdir tmp 2>/dev/null || true
+          rm -f .github/workflows/assemble-hero.yml
+
+      - name: Commit final hero repair
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Repair first-screen fox image with verified asset"
+          git push

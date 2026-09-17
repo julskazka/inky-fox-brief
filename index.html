@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#090A0D" />
+  <meta name="description" content="Бриф на разработку MiniApp / веб-страницы — Inky Fox" />
+  <title>Inky Fox — бриф на разработку</title>
+  <link rel="preload" href="assets/inky-fox.webp" as="image" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ambient ambient-pink" aria-hidden="true"></div>
+  <div class="ambient ambient-blue" aria-hidden="true"></div>
+  <div class="ambient ambient-mint" aria-hidden="true"></div>
+
+  <main class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Inky Fox — в начало">
+        <span class="brand-mark" aria-hidden="true">✦</span>
+        <span class="brand-copy">
+          <strong>INKY FOX</strong>
+          <small>бриф на разработку</small>
+        </span>
+      </a>
+      <div class="topbar-status" id="topbarStatus" aria-live="polite"></div>
+    </header>
+
+    <section class="quiz-wrap" aria-live="polite">
+      <div class="progress-shell" id="progressShell" hidden>
+        <div class="progress-meta">
+          <span id="progressLabel">Шаг 1</span>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress-track" aria-hidden="true">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <section class="quiz-card" id="quizCard">
+        <div class="paw paw-one" aria-hidden="true">●</div>
+        <div class="paw paw-two" aria-hidden="true">●</div>
+        <div id="screen"></div>
+      </section>
+
+      <div class="nav-row" id="navRow" hidden>
+        <button class="btn btn-ghost" type="button" id="backBtn">Назад</button>
+        <button class="btn btn-primary" type="button" id="nextBtn">Далее</button>
+      </div>
+
+      <p class="save-note" id="saveNote" hidden>Ответы сохраняются на этом устройстве — можно вернуться позже.</p>
+    </section>
+  </main>
+
+  <template id="introTemplate">
+    <div class="intro-grid">
+      <div class="intro-copy">
+        <span class="eyebrow">БРИФ · MINIAPP / WEB</span>
+        <h1>Расскажите о проекте — я соберу из этого понятную задачу на разработку</h1>
+        <p class="lead">Не нужно готовить техническое задание. Ответьте на вопросы так, как понимаете сейчас. Если чего-то ещё нет — это нормально.</p>
+        <div class="intro-points">
+          <span>≈ 7–10 минут</span>
+          <span>можно вернуться назад</span>
+          <span>ответы не потеряются</span>
+        </div>
+        <button class="btn btn-primary btn-large" type="button" id="startBtn">Начать бриф</button>
+      </div>
+      <div class="intro-art" aria-hidden="true">
+        <div class="fox-halo"></div>
+        <img src="assets/inky-fox.webp" alt="" class="fox-image" />
+      </div>
+    </div>
+  </template>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

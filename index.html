@@ -6,7 +6,6 @@
   <meta name="theme-color" content="#090A0D" />
   <meta name="description" content="Бриф на разработку MiniApp / веб-страницы — Inky Fox" />
   <title>Inky Fox — бриф на разработку</title>
-  <link rel="preload" href="assets/inky-fox.webp" as="image" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -67,11 +66,12 @@
       </div>
       <div class="intro-art" aria-hidden="true">
         <div class="fox-halo"></div>
-        <img src="assets/inky-fox.webp" alt="" class="fox-image" />
+        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" data-b64-src="assets/inky-fox.b64" alt="" class="fox-image" />
       </div>
     </div>
   </template>
 
+  <script src="asset-loader.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>
